@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login | HofTAPS</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="logo">HofTAPS</div>
+  </header>
+
+  <div class="form-container" style="max-width: 400px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <h2 style="margin-bottom: 1rem; color: #0057B7;">Log in to HofTAPS</h2>
+
+    <input type="email" id="login-email" placeholder="Email (@pride.hofstra.edu)" required style="width: 100%; padding: 10px; margin-bottom: 1rem;" />
+    <input type="password" id="login-password" placeholder="Password" required style="width: 100%; padding: 10px; margin-bottom: 1.5rem;" />
+
+    <button class="btn btn-primary" style="width: 100%;" onclick="handleLogin()">Login</button>
+    <p style="margin-top: 1rem; text-align: center;">Don’t have an account? <a href="signup.html">Sign Up</a></p>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-storage-compat.js"></script>
+
+  <!-- Firebase Config -->
+  <script type="module" src="../firebase/firebase-config.js"></script>
+
+  <!-- Auth & Notification Logic -->
+  <script type="module">
+    import { showToast } from "../utils/notifications.js";
+
+    window.handleLogin = async function () {
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
+
+      try {
+        if (!email.endsWith("@pride.hofstra.edu")) {
+          return showToast("error", "Only Hofstra emails allowed.");
+        }
+
+        const cred = await firebase.auth().signInWithEmailAndPassword(email, password);
+        const user = cred.user;
+
+        if (!user.emailVerified) {
+          showToast("warning", "Please verify your email first.");
+          firebase.auth().signOut();
+        } else {
+          showToast("success", "Login successful!");
+          window.location.href = "dashboard.html";
+        }
+      } catch (err) {
+        showToast("error", err.message);
+      }
+    };
+  </script>
+
+</body>
+</html>
+

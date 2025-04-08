@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users
+    match /users/{userId} {
+      allow read, update: if request.auth.uid == userId;
+      allow create: if request.auth.uid != null;
+      allow delete: if false; // Prevent deletes from client
+      // Prevent user from changing their role
+      allow update: if !("role" in request.resource.data);
+    }
+
+    // Book listings
+    match /books/{bookId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth.uid == resource.data.userId;
+    }
+
+    // Wishlist
+    match /wishlist/{docId} {
+      allow read, write: if request.auth.uid != null;
+    }
+
+    // Messages
+    match /messages/{threadId} {
+      allow read, write: if request.auth.uid != null;
+    }
+
+    // Platform Stats (admin only)
+    match /stats/{docId} {
+      allow read: if true;
+      allow write: if request.auth.token.role == "admin";
+    }
+
+    // Admin-only area (e.g. flag reports, user management)
+    match /adminOnly/{docId} {
+      allow read, write: if request.auth.token.role == "admin";
+    }
+  }
+}

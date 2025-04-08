@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upload Book | Textbook Exchange</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo"><a href="index.html">HofTAPS</a></div>
+    <nav class="nav-right">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="wishlist.html">Wishlist</a>
+      <a href="inbox.html">Inbox</a>
+      <a href="upload.html">Sell Book</a>
+      <div class="dropdown">
+        <button class="dropbtn">More ▾</button>
+        <div class="dropdown-content">
+          <a href="settings.html">Settings</a>
+          <a href="help.html">Help</a>
+          <a href="login.html">Login</a>
+          <a href="signup.html">Sign Up</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="form-container">
+    <h2>📘 Sell Your Book</h2>
+
+    <input type="text" id="isbn" placeholder="ISBN (Magic Fill)" />
+    <button onclick="fetchBookInfo()">Auto-Fill</button>
+
+    <input type="text" id="title" placeholder="Book Title" required />
+    <input type="text" id="author" placeholder="Author" required />
+    <input type="text" id="category" placeholder="Category (e.g. Math)" required />
+    <input type="text" id="condition" placeholder="Condition (New, Like New, Worn)" required />
+    <input type="number" id="price" placeholder="Price (USD)" required />
+    <textarea id="description" placeholder="Additional Notes (optional)"></textarea>
+
+    <label for="images">Upload Condition Photos (Max 5)</label>
+    <input type="file" id="images" accept="image/*" multiple />
+    <div id="image-preview"></div>
+
+    <button onclick="uploadBook()">Upload Book</button>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-functions-compat.js"></script>
+
+  <script type="module" src="../firebase/firebase-config.js"></script>
+  <script type="module" src="../utils/notifications.js"></script>
+
+  <script type="module">
+    import { auth, db } from "../firebase/firebase-config.js";
+    import { showToast } from "../utils/notifications.js";
+
+    const functions = firebase.functions();
+
+    window.uploadBook = async function () {
+      const user = auth.currentUser;
+      if (!user) return showToast("error", "You must be logged in.");
+
+      const title = document.getElementById("title").value;
+      const author = document.getElementById("author").value;
+      const category = document.getElementById("category").value;
+      const condition = document.getElementById("condition").value;
+      const price = parseFloat(document.getElementById("price").value);
+      const description = document.getElementById("description").value;
+      const images = document.getElementById("images").files;
+
+      if (!title || !author || !category || !condition || !price) {
+        return showToast("warning", "All required fields must be filled.");
+      }
+
+      if (images.length > 5) {
+        return showToast("warning", "Upload up to 5 images.");
+      }
+
+      const photoUrls = [];
+      const getSignedUrl = functions.httpsCallable("uploadBookSignedURL");
+
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+
+        try {
+          // 1. Get signed URL from Firebase function
+          const { data } = await getSignedUrl({
+            fileName: img.name,
+            contentType: img.type,
+          });
+
+          // 2. Upload image to signed URL
+          await fetch(data.uploadUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": img.type,
+            },
+            body: img,
+          });
+
+          // 3. Generate public image URL
+          const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${firebase.app().options.storageBucket}/o/${encodeURIComponent(data.path)}?alt=media`;
+          photoUrls.push(publicUrl);
+        } catch (err) {
+          console.error("Upload failed for", img.name, err);
+          return showToast("error", `Failed to upload ${img.name}`);
+        }
+      }
+
+      const book = {
+        userId: user.uid,
+        title,
+        author,
+        category,
+        condition,
+        price,
+        description,
+        photoUrls, // ✅ PUBLIC URLs here!
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+
+      try {
+        await db.collection("books").add(book);
+        showToast("success", "Book uploaded successfully!");
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        console.error(err);
+        showToast("error", "Upload failed.");
+      }
+    };
+
+    window.fetchBookInfo = async function () {
+      const isbn = document.getElementById("isbn").value.trim();
+      if (!isbn) return showToast("warning", "Enter an ISBN first");
+
+      try {
+        const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+        const data = await response.json();
+        if (data.totalItems > 0) {
+          const book = data.items[0].volumeInfo;
+          document.getElementById("title").value = book.title || "";
+          document.getElementById("author").value = book.authors?.join(", ") || "";
+          document.getElementById("category").value = book.categories?.[0] || "";
+        } else {
+          showToast("error", "No book info found for this ISBN.");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("error", "Failed to fetch book info.");
+      }
+    };
+
+    // Image preview logic
+    document.getElementById("images").addEventListener("change", function () {
+      const preview = document.getElementById("image-preview");
+      preview.innerHTML = "";
+      Array.from(this.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement("img");
+          img.src = e.target.result;
+          img.style.width = "80px";
+          img.style.marginRight = "10px";
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  </script>
+</body>
+</html>

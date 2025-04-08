@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wishlist | Textbook Exchange</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo"><a href="index.html">HofTAPS</a></div>
+    <nav class="nav-right">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="wishlist.html">Wishlist</a>
+      <a href="inbox.html">Inbox</a>
+      <a href="upload.html">Sell Book</a>
+      <div class="dropdown">
+        <button class="dropbtn">More ▾</button>
+        <div class="dropdown-content">
+          <a href="settings.html">Settings</a>
+          <a href="help.html">Help</a>
+          <a href="login.html">Login</a>
+          <a href="signup.html">Sign Up</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+  
+
+  <div class="wishlist-container">
+    <h2>❤️ My Wishlist</h2>
+    <div id="wishlist-listings" class="listings"></div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore-compat.js"></script>
+
+  <script type="module" src="/firebase/firebase-config.js"></script>
+  <script type="module" src="/utils/notifications.js"></script>
+
+  <script type="module">
+    import { auth, db } from "/firebase/firebase-config.js";
+    import { showToast } from "/utils/notifications.js";
+
+    const container = document.getElementById("wishlist-listings");
+
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        showToast("error", "Login required to view wishlist.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const snap = await db.collection("wishlist")
+        .where("userId", "==", user.uid)
+        .get();
+
+      if (snap.empty) {
+        container.innerHTML = "<p>No books saved to wishlist.</p>";
+      } else {
+        snap.forEach(async doc => {
+          const data = doc.data();
+          const bookRef = await db.collection("books").doc(data.bookId).get();
+
+          if (bookRef.exists) {
+            const book = bookRef.data();
+            const card = document.createElement("div");
+            card.className = "listing-card";
+            card.innerHTML = `
+              <img src="${book.coverUrl || 'https://via.placeholder.com/150'}" width="100%">
+              <h3>${book.title}</h3>
+              <p><strong>${book.author}</strong></p>
+              <p>${book.condition}</p>
+              <p>$${book.price}</p>
+              <a href="/book.html?id=${bookRef.id}">View Details</a>
+            `;
+            container.appendChild(card);
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

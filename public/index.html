@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HofTAPS | Textbook Exchange</title>
+
+  <!-- Swiper CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="logo">HofTAPS</div>
+    <div class="nav-right">
+        <!-- Auth buttons if not logged in -->
+  
+      <div id="auth-status" class="auth-status">Checking login...</div>
+      <div class="auth-buttons" id="auth-buttons">
+      </div>
+      <div class="dropdown">
+        <button class="dropbtn">Menu</button>
+        <div class="dropdown-content">
+          <a href="dashboard.html">Account</a s>
+          <a href="settings.html">Settings</a>
+          <a href="help.html">Help</a>
+          <a href="upload.html">Sell a Book</a>
+          <a href="wishlist.html">Wishlsit</a>
+          <a hreff="inbox.html">Inbox</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filter Chips -->
+  <section class="filter-chips" id="quick-filters"></section>
+
+  <!-- Stats -->
+  <section class="platform-stats" id="stats-box">
+    <div>Books: <span id="book-count">–</span></div>
+    <div>Users: <span id="user-count">–</span></div>
+    <div>Today: <span id="today-count">–</span></div>
+  </section>
+
+  <!-- Featured -->
+  <section class="carousel-container">
+    <h2>Featured Listings</h2>
+    <div class="swiper-container" id="featured-carousel">
+      <div class="swiper-wrapper" id="featuredCarousel"></div>
+    </div>
+  </section>
+
+  <!-- Recently Viewed -->
+  <section class="carousel-container">
+    <h2>Recently Viewed</h2>
+    <div class="swiper-container" id="recent-carousel">
+      <div class="swiper-wrapper" id="recentCarousel"></div>
+    </div>
+  </section>
+
+  <!-- Listings -->
+  <section id="listing-section">
+    <h2>Available Textbooks</h2>
+    <div class="listings" id="listings"></div>
+  </section>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Swiper JS -->
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.4.0/firebase-storage-compat.js"></script>
+
+  <!-- App Scripts -->
+  <script type="module" src="../firebase/firebase-config.js"></script>
+  <script type="module" src="../utils/auth.js"></script>
+  <script type="module" src="../utils/notifications.js"></script>
+  <script type="module" src="../utils/stats.js"></script>
+  <script type="module" src="../utils/filters.js"></script>
+  <script type="module" src="script.js"></script>
+
+</body>
+</html>
